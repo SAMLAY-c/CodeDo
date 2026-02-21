@@ -169,7 +169,7 @@ exports.handler = async (event, context) => {
         toc = headingMatch
           .map(match => {
             const levelMatch = match.match(/<h([23])>/);
-            const idMatch = match.match(/id=["']([^"']+)["'/) ||
+            const idMatch = match.match(/id=["']([^"']+)["']/) ||
                            match.match(/>(.*?)</);
             const textMatch = match.match(/>(.*?)</);
             return {
