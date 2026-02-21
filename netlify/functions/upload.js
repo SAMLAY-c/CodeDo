@@ -15,11 +15,12 @@ const MAX_FILE_SIZE = {
   [FileType.VIDEO]: 100 * 1024 * 1024   // 100MB
 };
 
-// 允许的 MIME 类型
-const ALLOWED_MIME_TYPES = {
-  [FileType.HTML]: ['text/html', 'application/xhtml+xml'],
-  [FileType.IMAGE]: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-  [FileType.VIDEO]: ['video/mp4', 'video/webm', 'video/ogg']
+// 分类映射
+const CATEGORY_MAP = {
+  'article': 'basic',      // 文章博客 -> 基础入门
+  'tech': 'tools',         // 技术文档 -> 工具使用
+  'media': 'project',      // 媒体资源 -> 实战项目
+  'custom': 'basic'        // 自定义 -> 基础入门
 };
 
 exports.handler = async (event, context) => {
@@ -104,53 +105,134 @@ exports.handler = async (event, context) => {
           body: JSON.stringify({ error: '无效的 HTML 文件' })
         };
       }
+
+      // 验证内容长度
+      if (file.content.length < 100) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'HTML 内容太少' })
+        };
+      }
     }
 
     // 生成唯一 ID
     const id = crypto.randomUUID();
     const timestamp = new Date().toISOString();
 
-    // 提取 HTML 标题（如果是 HTML 文件）
+    // 解析 HTML 内容
+    let parsedContent = null;
     let extractedTitle = title;
+    let excerpt = '';
+    let keyPoints = [];
+    let toc = [];
+
     if (fileType === FileType.HTML) {
+      // 提取 HTML 标题
       const titleMatch = file.content.match(/<title>(.*?)<\/title>/i);
       if (titleMatch && !formData.title) {
         extractedTitle = titleMatch[1];
       }
+
+      // 提取 h1 标题
+      const h1Match = file.content.match(/<h1[^>]*>(.*?)<\/h1>/i);
+      if (h1Match && !formData.title) {
+        extractedTitle = h1Match[1].replace(/<[^>]*>/g, '').trim();
+      }
+
+      // 提取摘要（从第一个 p 标签或 meta description）
+      const descMatch = file.content.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["'][^>]*>/i);
+      if (descMatch) {
+        excerpt = descMatch[1];
+      } else {
+        const pMatch = file.content.match(/<p[^>]*>(.*?)<\/p>/is);
+        if (pMatch) {
+          excerpt = pMatch[1].replace(/<[^>]*>/g, '').trim().substring(0, 200);
+        }
+      }
+
+      // 提取核心要点（从第一个 ul 或 ol）
+      const listMatch = file.content.match(/<(ul|ol)[^>]*>([\s\S]*?)<\/\1>/i);
+      if (listMatch) {
+        const items = listMatch[2].match(/<li[^>]*>(.*?)<\/li>/gi);
+        if (items) {
+          keyPoints = items
+            .map(item => item.replace(/<[^>]*>/g, '').trim())
+            .filter(text => text.length > 0)
+            .slice(0, 5);
+        }
+      }
+
+      // 生成目录（提取 h2, h3）
+      const headingMatch = file.content.match(/<(h[23])([^>]*id=["']([^"']+)["']|[^>]*)>(.*?)<\/\1>/gi);
+      if (headingMatch) {
+        toc = headingMatch
+          .map(match => {
+            const levelMatch = match.match(/<h([23])>/);
+            const idMatch = match.match(/id=["']([^"']+)["'/) ||
+                           match.match(/>(.*?)</);
+            const textMatch = match.match(/>(.*?)</);
+            return {
+              id: idMatch ? idMatch[1] : `section-${toc.length}`,
+              label: textMatch ? textMatch[1].replace(/<[^>]*>/g, '').trim() : '',
+              level: levelMatch ? parseInt(levelMatch[1]) - 1 : 1
+            };
+          })
+          .filter(item => item.label)
+          .slice(0, 20);
+      }
+
+      // 构建解析后的内容
+      parsedContent = {
+        title: extractedTitle,
+        content: file.content,
+        excerpt,
+        keyPoints,
+        toc
+      };
     }
 
-    // 构建响应数据（模拟数据库记录）
-    const record = {
+    // 映射分类
+    const mappedCategory = CATEGORY_MAP[category] || 'basic';
+
+    // 构建文章数据（兼容现有格式）
+    const article = {
       id,
       filename: file.filename,
       fileType,
       title: extractedTitle,
-      category,
+      excerpt,
+      author: 'AI编程导师', // 默认作者，可以后续修改
+      date: timestamp.split('T')[0],
+      readTime: estimateReadTime(file.content),
+      category: mappedCategory,
       tags,
       size: file.content.length,
       createdAt: timestamp,
-      // TODO: 实际部署时应该存储文件到数据库和云存储
-      // content: file.content,  // HTML 文件可以存储内容
-      // url: `https://storage.example.com/${id}/${file.filename}`  // 图片/视频的 URL
+      // HTML 文件特有字段
+      ...(fileType === FileType.HTML && {
+        content: file.content,
+        keyPoints,
+        toc,
+        difficulty: '入门', // 默认难度
+        episodes: 1,
+        duration: '15分钟'
+      }),
+      // 图片/视频文件特有字段
+      ...(fileType !== FileType.HTML && {
+        url: `https://your-storage.com/${id}/${file.filename}`
+      })
     };
 
-    // 根据文件类型返回不同的数据
-    if (fileType === FileType.HTML) {
-      record.content = file.content;
-    } else {
-      // 图片和视频应该上传到云存储，这里返回占位符 URL
-      record.url = `https://your-storage.com/${id}/${file.filename}`;
-    }
-
     // TODO: 保存到数据库
-    // await db.collection('uploads').insertOne(record);
+    // await db.collection('articles').insertOne(article);
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        ...record
+        ...article
       })
     };
 
@@ -166,6 +248,14 @@ exports.handler = async (event, context) => {
     };
   }
 };
+
+// 估算阅读时间（分钟）
+function estimateReadTime(content: string): string {
+  const wordsPerMinute = 200; // 中文阅读速度
+  const textLength = content.replace(/<[^>]*>/g, '').length;
+  const minutes = Math.ceil(textLength / wordsPerMinute / 3); // 中文约3个字符=1词
+  return `${minutes} 分钟`;
+}
 
 // 解析 multipart/form-data 的辅助函数
 function parseMultipartData(body, contentType) {
