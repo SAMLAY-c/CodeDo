@@ -109,17 +109,23 @@ async function getArticleByIdFromSupabase(id) {
 
 async function getArticles(options = {}) {
   const category = options.category || 'all';
+  const theme = options.theme || 'all';
   const limit = Number(options.limit || 50);
   const offset = Number(options.offset || 0);
 
   if (HAS_SUPABASE) {
     const rows = await getArticlesFromSupabase();
-    const filtered =
-      category === 'all'
-        ? rows
-        : rows.filter((article) => article.category === category);
+    const filtered = rows.filter((article) => {
+      const categoryMatch = category === 'all' || article.category === category;
+      const themeMatch = theme === 'all' || article.themeId === theme;
+      return categoryMatch && themeMatch;
+    });
     const paged = filtered.slice(offset, offset + limit);
-    return { items: paged, total: filtered.length };
+    return {
+      items: paged,
+      total: filtered.length,
+      themes: buildThemeStats(rows),
+    };
   }
 
   const local = await readStore();
@@ -128,11 +134,15 @@ async function getArticles(options = {}) {
     const aTime = new Date(a.createdAt || a.date || 0).getTime();
     return bTime - aTime;
   });
-  const filtered =
-    category === 'all' ? items : items.filter((item) => item.category === category);
+  const filtered = items.filter((item) => {
+    const categoryMatch = category === 'all' || item.category === category;
+    const themeMatch = theme === 'all' || item.themeId === theme;
+    return categoryMatch && themeMatch;
+  });
   return {
     items: filtered.slice(offset, offset + limit),
     total: filtered.length,
+    themes: buildThemeStats(items),
   };
 }
 
@@ -200,6 +210,19 @@ async function getArticlesFromSupabase() {
   const rows = await response.json();
   if (!Array.isArray(rows)) return [];
   return rows.map((row) => row.article).filter(Boolean);
+}
+
+function buildThemeStats(items) {
+  const map = new Map();
+  for (const item of items) {
+    const id = item.themeId || 'uncategorized';
+    const name = item.themeName || '未分类主题';
+    const current = map.get(id) || { id, name, count: 0 };
+    current.count += 1;
+    map.set(id, current);
+  }
+
+  return Array.from(map.values()).sort((a, b) => b.count - a.count);
 }
 
 function buildSupabaseHeaders(extra = {}) {

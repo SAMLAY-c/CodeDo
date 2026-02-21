@@ -13,6 +13,8 @@ export interface Article {
   date: string;
   readTime: string;
   category: string;
+  themeId?: string;
+  themeName?: string;
   difficulty: '入门' | '中级' | '进阶';
   episodes?: number;
   duration?: string;

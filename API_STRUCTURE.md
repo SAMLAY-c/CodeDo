@@ -13,6 +13,8 @@
   "createdAt": "ISO datetime",
   "readTime": "string",
   "category": "basic | tools | project",
+  "themeId": "string?",
+  "themeName": "string?",
   "difficulty": "入门 | 中级 | 进阶",
   "duration": "string",
   "episodes": "number",
@@ -45,14 +47,16 @@
 
 ### 3) 获取文章列表
 
-- `GET /api/get-articles?category=all|basic|tools|project&limit=50&offset=0`
+- `GET /api/get-articles?category=all|basic|tools|project&theme=all|{themeId}&limit=50&offset=0`
 - 出参：
 
 ```json
 {
   "items": ["Article"],
+  "themes": [{ "id": "string", "name": "string", "count": 3 }],
   "total": 6,
   "category": "all",
+  "theme": "all",
   "limit": 50,
   "offset": 0
 }

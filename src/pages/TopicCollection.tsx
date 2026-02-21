@@ -32,12 +32,20 @@ interface TutorialItem {
   excerpt: string;
   image?: string;
   category: string;
+  themeId?: string;
+  themeName?: string;
   episodes?: number;
   status?: string;
   statusLabel?: string;
   duration?: string;
   difficulty: string;
   featured?: boolean;
+}
+
+interface ThemeStat {
+  id: string;
+  name: string;
+  count: number;
 }
 
 // 回退文章数据（API 不可用时使用）
@@ -54,6 +62,8 @@ const fallbackArticles: TutorialItem[] = [
     duration: '45分钟',
     difficulty: '入门',
     featured: true,
+    themeId: 'vibe-coding',
+    themeName: 'Vibe Coding',
   },
   {
     id: '2',
@@ -67,6 +77,8 @@ const fallbackArticles: TutorialItem[] = [
     duration: '30分钟',
     difficulty: '进阶',
     featured: false,
+    themeId: 'claude-dev',
+    themeName: 'Claude 开发',
   },
   {
     id: '3',
@@ -80,6 +92,8 @@ const fallbackArticles: TutorialItem[] = [
     duration: '120分钟',
     difficulty: '中级',
     featured: false,
+    themeId: 'web-build',
+    themeName: 'Web 应用实战',
   },
   {
     id: '4',
@@ -93,6 +107,8 @@ const fallbackArticles: TutorialItem[] = [
     duration: '60分钟',
     difficulty: '中级',
     featured: false,
+    themeId: 'automation',
+    themeName: '自动化工作流',
   },
   {
     id: '5',
@@ -106,6 +122,8 @@ const fallbackArticles: TutorialItem[] = [
     duration: '40分钟',
     difficulty: '入门',
     featured: false,
+    themeId: 'debugging',
+    themeName: '调试与排障',
   },
   {
     id: '6',
@@ -119,6 +137,8 @@ const fallbackArticles: TutorialItem[] = [
     duration: '90分钟',
     difficulty: '进阶',
     featured: false,
+    themeId: 'engineering-quality',
+    themeName: '工程质量与重构',
   },
 ];
 
@@ -152,7 +172,9 @@ const StatusBadge = ({ status, label }: { status?: string; label?: string }) => 
 function TopicCollection() {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState('all');
+  const [activeTheme, setActiveTheme] = useState('all');
   const [articles, setArticles] = useState<TutorialItem[]>(fallbackArticles);
+  const [themes, setThemes] = useState<ThemeStat[]>([]);
 
   useEffect(() => {
     document.title = 'Vibe Coding 主题合集 - Coding入门';
@@ -174,6 +196,9 @@ function TopicCollection() {
             id: String(item.id),
           }));
           setArticles(normalized);
+          if (Array.isArray(payload.themes)) {
+            setThemes(payload.themes);
+          }
         }
       } catch {
         // keep fallback data
@@ -187,9 +212,11 @@ function TopicCollection() {
   }, []);
 
   // 筛选文章
-  const filteredArticles = activeCategory === 'all' 
-    ? articles 
-    : articles.filter(a => a.category === activeCategory);
+  const filteredArticles = articles.filter((item) => {
+    const categoryMatch = activeCategory === 'all' || item.category === activeCategory;
+    const themeMatch = activeTheme === 'all' || item.themeId === activeTheme;
+    return categoryMatch && themeMatch;
+  });
 
   const featuredArticle = filteredArticles.find(a => a.featured);
   const gridArticles = filteredArticles.filter(a => !a.featured);
@@ -205,26 +232,14 @@ function TopicCollection() {
       id: 'all',
       name: '全部教程',
       count: articles.length,
-      active: activeCategory === 'all',
+      active: activeTheme === 'all',
     },
-    {
-      id: 'basic',
-      name: '基础入门',
-      count: articles.filter((item) => item.category === 'basic').length,
-      active: activeCategory === 'basic',
-    },
-    {
-      id: 'tools',
-      name: '工具使用',
-      count: articles.filter((item) => item.category === 'tools').length,
-      active: activeCategory === 'tools',
-    },
-    {
-      id: 'project',
-      name: '实战项目',
-      count: articles.filter((item) => item.category === 'project').length,
-      active: activeCategory === 'project',
-    },
+    ...themes.map((theme) => ({
+      id: theme.id,
+      name: theme.name,
+      count: theme.count,
+      active: activeTheme === theme.id,
+    })),
   ];
 
   return (
@@ -398,7 +413,7 @@ function TopicCollection() {
                 {seriesList.map(series => (
                   <div 
                     key={series.id}
-                    onClick={() => setActiveCategory(series.id)}
+                    onClick={() => setActiveTheme(series.id)}
                     className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all ${
                       series.active 
                         ? 'bg-cyan-500/20 border border-cyan-500/30' 

@@ -22,17 +22,20 @@ exports.handler = async (event) => {
   try {
     const query = event.queryStringParameters || {};
     const category = query.category || 'all';
+    const theme = query.theme || 'all';
     const limit = Number(query.limit || 50);
     const offset = Number(query.offset || 0);
 
-    const result = await getArticles({ category, limit, offset });
+    const result = await getArticles({ category, theme, limit, offset });
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         items: result.items,
         total: result.total,
+        themes: result.themes || [],
         category,
+        theme,
         limit,
         offset,
       }),

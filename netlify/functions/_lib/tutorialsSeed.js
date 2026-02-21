@@ -37,6 +37,8 @@ const tutorialSeeds = [
     status: 'hot',
     statusLabel: '热门',
     featured: true,
+    themeId: 'vibe-coding',
+    themeName: 'Vibe Coding',
     createdAt: now,
   },
   {
@@ -68,6 +70,8 @@ const tutorialSeeds = [
     status: 'new',
     statusLabel: 'NEW',
     featured: false,
+    themeId: 'claude-dev',
+    themeName: 'Claude 开发',
     createdAt: now,
   },
   {
@@ -100,6 +104,8 @@ const tutorialSeeds = [
     status: 'coming',
     statusLabel: '即将发布',
     featured: false,
+    themeId: 'web-build',
+    themeName: 'Web 应用实战',
     createdAt: now,
   },
   {
@@ -125,6 +131,8 @@ const tutorialSeeds = [
     episodes: 4,
     duration: '60分钟',
     featured: false,
+    themeId: 'automation',
+    themeName: '自动化工作流',
     createdAt: now,
   },
   {
@@ -156,6 +164,8 @@ const tutorialSeeds = [
     status: 'new',
     statusLabel: 'NEW',
     featured: false,
+    themeId: 'debugging',
+    themeName: '调试与排障',
     createdAt: now,
   },
   {
@@ -181,6 +191,8 @@ const tutorialSeeds = [
     episodes: 6,
     duration: '90分钟',
     featured: false,
+    themeId: 'engineering-quality',
+    themeName: '工程质量与重构',
     createdAt: now,
   },
 ];
