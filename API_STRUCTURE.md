@@ -72,9 +72,35 @@
 }
 ```
 
+### 5) 更新文章（后台管理）
+
+- `PUT /api/article/:id`
+- Body：`Article` 的局部字段（JSON）
+- 出参：
+
+```json
+{
+  "success": true,
+  "item": "Article"
+}
+```
+
+### 6) 删除文章（后台管理）
+
+- `DELETE /api/article/:id`
+- 出参：
+
+```json
+{
+  "success": true,
+  "id": "string"
+}
+```
+
 ## 推荐流程
 
 1. 先调用 `POST /api/seed-tutorials` 导入现有教程。
 2. 前端列表页使用 `GET /api/get-articles`。
 3. 详情页使用 `GET /api/get-article/:id`。
 4. 新教程继续走 `POST /api/upload`。
+5. 后台编辑/删除分别走 `PUT /api/article/:id` 和 `DELETE /api/article/:id`。

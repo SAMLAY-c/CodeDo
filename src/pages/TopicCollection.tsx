@@ -26,14 +26,6 @@ const categories = [
   { id: 'project', label: '实战项目' },
 ];
 
-// 系列导航数据
-const seriesList = [
-  { id: 'vibe-coding', name: 'Vibe Coding', count: 12, active: true },
-  { id: 'claude', name: 'Claude开发', count: 8, active: false },
-  { id: 'openclaw', name: 'OpenClaw工具', count: 6, active: false },
-  { id: 'pm-tools', name: 'PM AI工具箱', count: 10, active: false },
-];
-
 interface TutorialItem {
   id: string;
   title: string;
@@ -160,7 +152,6 @@ const StatusBadge = ({ status, label }: { status?: string; label?: string }) => 
 function TopicCollection() {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState('all');
-  const [progress] = useState(35);
   const [articles, setArticles] = useState<TutorialItem[]>(fallbackArticles);
 
   useEffect(() => {
@@ -202,6 +193,39 @@ function TopicCollection() {
 
   const featuredArticle = filteredArticles.find(a => a.featured);
   const gridArticles = filteredArticles.filter(a => !a.featured);
+  const totalDurationMinutes = articles.reduce(
+    (sum, item) => sum + parseDurationMinutes(item.duration),
+    0
+  );
+  const totalHours = Math.max(1, Math.round(totalDurationMinutes / 60));
+  const completedCount = articles.filter((item) => item.status !== 'coming').length;
+  const progress = articles.length > 0 ? Math.round((completedCount / articles.length) * 100) : 0;
+  const seriesList = [
+    {
+      id: 'all',
+      name: '全部教程',
+      count: articles.length,
+      active: activeCategory === 'all',
+    },
+    {
+      id: 'basic',
+      name: '基础入门',
+      count: articles.filter((item) => item.category === 'basic').length,
+      active: activeCategory === 'basic',
+    },
+    {
+      id: 'tools',
+      name: '工具使用',
+      count: articles.filter((item) => item.category === 'tools').length,
+      active: activeCategory === 'tools',
+    },
+    {
+      id: 'project',
+      name: '实战项目',
+      count: articles.filter((item) => item.category === 'project').length,
+      active: activeCategory === 'project',
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-[#050508]">
@@ -244,7 +268,7 @@ function TopicCollection() {
             </div>
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5 text-cyan-400" />
-              <span className="text-white">约 8 小时</span>
+              <span className="text-white">约 {totalHours} 小时</span>
             </div>
           </div>
         </div>
@@ -374,6 +398,7 @@ function TopicCollection() {
                 {seriesList.map(series => (
                   <div 
                     key={series.id}
+                    onClick={() => setActiveCategory(series.id)}
                     className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all ${
                       series.active 
                         ? 'bg-cyan-500/20 border border-cyan-500/30' 
@@ -403,7 +428,7 @@ function TopicCollection() {
                 <Progress value={progress} className="h-2 bg-white/10" />
               </div>
               <div className="text-sm text-white/40">
-                已学完 4 / {articles.length} 篇文章
+                已学完 {completedCount} / {articles.length} 篇文章
               </div>
             </div>
 
@@ -450,3 +475,20 @@ function TopicCollection() {
 }
 
 export default TopicCollection;
+
+function parseDurationMinutes(duration?: string): number {
+  if (!duration) return 15;
+
+  const hourMatch = duration.match(/(\d+)\s*小时/);
+  const minuteMatch = duration.match(/(\d+)\s*分钟/);
+
+  const hours = hourMatch ? Number(hourMatch[1]) : 0;
+  const minutes = minuteMatch ? Number(minuteMatch[1]) : 0;
+  const total = hours * 60 + minutes;
+
+  if (total > 0) return total;
+
+  const pureNum = duration.match(/\d+/);
+  if (!pureNum) return 15;
+  return Number(pureNum[0]);
+}

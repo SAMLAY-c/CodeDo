@@ -52,6 +52,8 @@ module.exports = {
   saveArticle,
   getArticleById,
   getArticles,
+  updateArticle,
+  deleteArticle,
 };
 
 async function saveArticleToSupabase(article) {
@@ -132,6 +134,49 @@ async function getArticles(options = {}) {
     items: filtered.slice(offset, offset + limit),
     total: filtered.length,
   };
+}
+
+async function updateArticle(id, patch = {}) {
+  const current = await getArticleById(id);
+  if (!current) {
+    return null;
+  }
+
+  const next = {
+    ...current,
+    ...patch,
+    id,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await saveArticle(next);
+  return next;
+}
+
+async function deleteArticle(id) {
+  if (HAS_SUPABASE) {
+    const endpoint = `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?id=eq.${encodeURIComponent(id)}`;
+    const response = await fetch(endpoint, {
+      method: 'DELETE',
+      headers: buildSupabaseHeaders({
+        Prefer: 'return=minimal',
+      }),
+    });
+
+    if (!response.ok) {
+      const detail = await safeReadText(response);
+      throw new Error(`Supabase delete failed: ${response.status} ${detail}`);
+    }
+    return true;
+  }
+
+  const local = await readStore();
+  if (!local[id]) {
+    return false;
+  }
+  delete local[id];
+  await writeStore(local);
+  return true;
 }
 
 async function getArticlesFromSupabase() {
