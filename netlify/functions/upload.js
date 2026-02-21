@@ -74,7 +74,11 @@ exports.handler = async (event, context) => {
     const fileType = formData.fileType || FileType.HTML;
     const title = formData.title?.trim() || file.filename;
     const category = formData.category || 'article';
+    const themeId = formData.themeId || '';
+    const themeName = formData.themeName || '';
     const tags = formData.tags ? JSON.parse(formData.tags) : [];
+    const coverImage = formData.coverImage || '';
+    const mediaBlocks = formData.mediaBlocks ? JSON.parse(formData.mediaBlocks) : [];
 
     // 验证文件类型
     if (!Object.values(FileType).includes(fileType)) {
@@ -208,9 +212,13 @@ exports.handler = async (event, context) => {
       date: timestamp.split('T')[0],
       readTime: estimateReadTime(file.content),
       category: mappedCategory,
+      ...(themeId && { themeId }),
+      ...(themeName && { themeName }),
       tags,
       size: file.content.length,
       createdAt: timestamp,
+      ...(coverImage && { coverImage }),
+      ...(Array.isArray(mediaBlocks) && mediaBlocks.length > 0 && { mediaBlocks }),
       // HTML 文件特有字段
       ...(fileType === FileType.HTML && {
         content: file.content,

@@ -1,6 +1,6 @@
-# Supabase 持久化配置
+﻿# Supabase Setup
 
-## 1) 在 Supabase SQL Editor 执行建表
+## 1) Run SQL in Supabase SQL Editor
 
 ```sql
 create table if not exists public.articles (
@@ -11,23 +11,33 @@ create table if not exists public.articles (
 );
 
 create index if not exists idx_articles_created_at on public.articles (created_at desc);
+
+create table if not exists public.themes (
+  id text primary key,
+  theme jsonb not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_themes_created_at on public.themes (created_at desc);
 ```
 
-## 2) 配置环境变量（Netlify）
+## 2) Netlify Environment Variables
 
-必填：
-
+Required:
 - `SUPABASE_URL=https://tztlfpnhgcajimzyqnml.supabase.co`
-- `SUPABASE_SERVICE_ROLE_KEY=你的service_role密钥`
+- `SUPABASE_SERVICE_ROLE_KEY=your-service-role-key`
 
-可选：
-
-- `SUPABASE_ANON_KEY=你的publishable/anon密钥`（仅当你不使用 service_role 时兜底）
+Optional:
+- `SUPABASE_ANON_KEY=your-publishable-or-anon-key`
 - `SUPABASE_ARTICLES_TABLE=articles`
-- `SEED_TOKEN=自定义导入令牌`（保护 `POST /api/seed-tutorials`）
+- `SUPABASE_THEMES_TABLE=themes`
+- `SEED_TOKEN=your-seed-token`
 
-## 3) 注意事项
+## 3) Notes
 
-- 推荐使用 `SUPABASE_SERVICE_ROLE_KEY`（服务端函数专用，不要放前端）。
-- 如果只用 `SUPABASE_ANON_KEY`，需要你自行配置 RLS policy 允许读写，否则会 401/403。
-- 当前代码已内置本地文件兜底（`/tmp/codedo-articles.json`），用于未配置 Supabase 时的临时运行。
+- Prefer `SUPABASE_SERVICE_ROLE_KEY` for server functions.
+- If using anon key only, configure RLS policies for read/write.
+- Local file fallback is still enabled for development:
+  - articles: `/tmp/codedo-articles.json`
+  - themes: `/tmp/codedo-themes.json`

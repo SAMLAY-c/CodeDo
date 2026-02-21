@@ -1,7 +1,6 @@
-# 教程 API 结构（可覆盖全部内容）
+﻿# API Structure
 
-## 数据模型（Article）
-
+## Article Model
 ```json
 {
   "id": "string",
@@ -15,96 +14,60 @@
   "category": "basic | tools | project",
   "themeId": "string?",
   "themeName": "string?",
-  "difficulty": "入门 | 中级 | 进阶",
-  "duration": "string",
-  "episodes": "number",
-  "image": "string?",
-  "status": "hot | new | coming ?",
-  "statusLabel": "string?",
-  "featured": "boolean?",
-  "filename": "string?",
-  "fileType": "html | image | video ?",
-  "url": "string?",
-  "articleUrl": "string?",
-  "tags": ["string"],
-  "keyPoints": ["string"],
-  "toc": [{ "id": "string", "label": "string", "level": "number" }]
+  "coverImage": "string?",
+  "mediaBlocks": [
+    {
+      "id": "string?",
+      "type": "image | video | text | gallery",
+      "url": "string?",
+      "text": "string?",
+      "images": ["string"],
+      "caption": "string?",
+      "order": 1,
+      "style": { "layout": "fullWidth | twoColumn | waterfall | inset" },
+      "poster": "string?"
+    }
+  ]
 }
 ```
 
-## 接口
-
-### 1) 上传并解析文章
-
-- `POST /api/upload`
-- 入参：`multipart/form-data`（`file`, `fileType`, `title`, `category`, `tags`）
-- 出参：`Article + { success: true }`
-
-### 2) 获取文章详情
-
-- `GET /api/get-article/:id`
-- 出参：`Article`
-
-### 3) 获取文章列表
-
-- `GET /api/get-articles?category=all|basic|tools|project&theme=all|{themeId}&limit=50&offset=0`
-- 出参：
-
+## Theme Model
 ```json
 {
-  "items": ["Article"],
-  "themes": [{ "id": "string", "name": "string", "count": 3 }],
-  "total": 6,
-  "category": "all",
-  "theme": "all",
-  "limit": 50,
-  "offset": 0
+  "id": "string",
+  "code": "01",
+  "name": "Vibe Coding教程",
+  "subtitle": "Vibe Coding入门",
+  "coverImage": "string?",
+  "bannerImage": "string?",
+  "gallery": ["string"],
+  "introVideo": "string?",
+  "layout": {
+    "heroStyle": "full | split | overlay",
+    "cardColumns": 3,
+    "sectionOrder": ["banner", "gallery", "articles"]
+  },
+  "sortOrder": 1,
+  "isActive": true
 }
 ```
 
-### 4) 导入现有教程种子数据
+## APIs
+1. `POST /api/upload`
+2. `GET /api/get-article/:id`
+3. `GET /api/get-articles?category=all|basic|tools|project&theme=all|{themeId}&limit=50&offset=0`
+4. `PUT /api/article/:id`
+5. `DELETE /api/article/:id`
+6. `POST /api/seed-tutorials`
+7. `GET /api/themes`
+8. `POST /api/themes`
+9. `GET /api/theme/:id`
+10. `PUT /api/theme/:id`
+11. `DELETE /api/theme/:id`
+12. `POST /api/seed-themes`
+13. `POST /api/media/upload`
 
-- `POST /api/seed-tutorials`
-- 可选 Header：`x-seed-token`（当配置 `SEED_TOKEN` 时必填）
-- 出参：
-
-```json
-{
-  "success": true,
-  "count": 6,
-  "ids": ["1", "2", "3", "4", "5", "6"]
-}
-```
-
-### 5) 更新文章（后台管理）
-
-- `PUT /api/article/:id`
-- Body：`Article` 的局部字段（JSON）
-- 出参：
-
-```json
-{
-  "success": true,
-  "item": "Article"
-}
-```
-
-### 6) 删除文章（后台管理）
-
-- `DELETE /api/article/:id`
-- 出参：
-
-```json
-{
-  "success": true,
-  "id": "string"
-}
-```
-
-## 推荐流程
-
-1. 先调用 `POST /api/seed-tutorials` 导入现有教程。
-2. 前端列表页使用 `GET /api/get-articles`。
-3. 详情页使用 `GET /api/get-article/:id`。
-4. 新教程继续走 `POST /api/upload`。
-5. 后台编辑/删除分别走 `PUT /api/article/:id` 和 `DELETE /api/article/:id`。
+## Notes
+1. `GET /api/get-articles` includes `themes` aggregation.
+2. `DELETE /api/theme/:id` blocks if related courses exist.
+3. `POST /api/media/upload` supports JSON mode (`url`) and multipart mode (`file`).

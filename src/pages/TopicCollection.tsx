@@ -92,8 +92,8 @@ const fallbackArticles: TutorialItem[] = [
     duration: '120分钟',
     difficulty: '中级',
     featured: false,
-    themeId: 'web-build',
-    themeName: 'Web 应用实战',
+    themeId: 'pm-ai-tools',
+    themeName: '产品经理AI工具教程',
   },
   {
     id: '4',
@@ -107,8 +107,8 @@ const fallbackArticles: TutorialItem[] = [
     duration: '60分钟',
     difficulty: '中级',
     featured: false,
-    themeId: 'automation',
-    themeName: '自动化工作流',
+    themeId: 'openclaw-tools',
+    themeName: 'OpenClaw工具教程',
   },
   {
     id: '5',
@@ -122,8 +122,8 @@ const fallbackArticles: TutorialItem[] = [
     duration: '40分钟',
     difficulty: '入门',
     featured: false,
-    themeId: 'debugging',
-    themeName: '调试与排障',
+    themeId: 'coding-fundamentals',
+    themeName: '编程基础精讲',
   },
   {
     id: '6',
@@ -137,8 +137,8 @@ const fallbackArticles: TutorialItem[] = [
     duration: '90分钟',
     difficulty: '进阶',
     featured: false,
-    themeId: 'engineering-quality',
-    themeName: '工程质量与重构',
+    themeId: 'coding-fundamentals',
+    themeName: '编程基础精讲',
   },
 ];
 

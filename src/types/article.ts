@@ -15,6 +15,8 @@ export interface Article {
   category: string;
   themeId?: string;
   themeName?: string;
+  coverImage?: string;
+  mediaBlocks?: MediaBlock[];
   difficulty: '入门' | '中级' | '进阶';
   episodes?: number;
   duration?: string;
@@ -36,12 +38,46 @@ export interface TOCItem {
   level: number;
 }
 
+export interface MediaBlock {
+  id?: string;
+  type: 'image' | 'video' | 'text' | 'gallery';
+  url?: string;
+  text?: string;
+  images?: string[];
+  caption?: string;
+  order: number;
+  style?: {
+    layout?: 'fullWidth' | 'twoColumn' | 'waterfall' | 'inset';
+  };
+  poster?: string;
+}
+
 export interface ArticleMetadata {
   coverImage?: string;
   series?: string;
   difficulty?: '入门' | '中级' | '进阶';
   duration?: string;
   episodes?: number;
+}
+
+export interface Theme {
+  id: string;
+  code: string;
+  name: string;
+  subtitle: string;
+  coverImage?: string;
+  bannerImage?: string;
+  gallery?: string[];
+  introVideo?: string;
+  layout?: {
+    heroStyle?: 'full' | 'split' | 'overlay';
+    cardColumns?: number;
+    sectionOrder?: string[];
+  };
+  sortOrder?: number;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // 文章系列
