@@ -4,6 +4,7 @@ import './index.css';
 import Home from './pages/Home';
 import TopicCollection from './pages/TopicCollection';
 import ArticleDetail from './pages/ArticleDetail';
+import Upload from './pages/Upload';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/topic-collection" element={<TopicCollection />} />
         <Route path="/article/:id" element={<ArticleDetail />} />
+        <Route path="/upload" element={<Upload />} />
       </Routes>
     </BrowserRouter>
   );
