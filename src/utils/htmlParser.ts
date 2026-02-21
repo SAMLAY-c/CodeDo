@@ -78,7 +78,7 @@ function extractMetadata($: cheerio.CheerioAPI): any {
 
   const episodes = $('article').data('episodes') ||
                     $('body').data('episodes');
-  if (episodes) metadata.episodes = parseInt(episodes);
+  if (episodes) metadata.episodes = parseInt(String(episodes));
 
   const duration = $('article').data('duration') ||
                     $('body').data('duration');
@@ -229,12 +229,6 @@ function generateTOC($: cheerio.CheerioAPI): TOCItem[] {
     const text = $el.text().trim();
 
     if (!text) return;
-
-    // 生成 ID
-    const id = text.toLowerCase()
-      .replace(/[^\u4e00-\u9fa5a-z0-9\s-]/gi, '')
-      .replace(/\s+/g, '-')
-      .substring(0, 50);
 
     if (tag === 'h2') {
       toc.push({

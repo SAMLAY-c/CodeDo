@@ -1,20 +1,24 @@
 import { useState, useRef } from 'react';
 import { Upload, FileText, Image, Video, CheckCircle, XCircle, Loader2, Tag, X } from 'lucide-react';
 
-// 文件类型枚举
-export enum FileType {
-  HTML = 'html',
-  IMAGE = 'image',
-  VIDEO = 'video'
-}
+// 文件类型常量
+export const FileType = {
+  HTML: 'html',
+  IMAGE: 'image',
+  VIDEO: 'video'
+} as const;
 
-// 分类枚举
-export enum Category {
-  ARTICLE = 'article',        // 文章博客
-  MEDIA = 'media',            // 媒体资源
-  TECH = 'tech',              // 技术文档
-  CUSTOM = 'custom'           // 自定义
-}
+export type FileType = typeof FileType[keyof typeof FileType];
+
+// 分类常量
+export const Category = {
+  ARTICLE: 'article',        // 文章博客
+  MEDIA: 'media',            // 媒体资源
+  TECH: 'tech',              // 技术文档
+  CUSTOM: 'custom'           // 自定义
+} as const;
+
+export type Category = typeof Category[keyof typeof Category];
 
 interface UploadResult {
   success: boolean;
