@@ -1,5 +1,7 @@
 import { useState, useRef } from 'react';
-import { Upload, FileText, Image, Video, CheckCircle, XCircle, Loader2, Tag, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Upload, FileText, Image, Video, CheckCircle, XCircle, Loader2, Tag, X, ExternalLink } from 'lucide-react';
+import { saveArticle } from '../utils/storage';
 
 // 文件类型常量
 export const FileType = {
@@ -34,6 +36,7 @@ interface UploadResult {
 }
 
 const FileUpload = () => {
+  const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [fileType, setFileType] = useState<FileType>(FileType.HTML);
   const [title, setTitle] = useState('');
@@ -140,15 +143,15 @@ const FileUpload = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
+        // 保存文章到本地存储
+        saveArticle(data);
+
         setResult(data);
-        // 重置表单
-        setFile(null);
-        setTitle('');
-        setTags([]);
-        setTagInput('');
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
+
+        // 3秒后自动跳转到文章页面
+        setTimeout(() => {
+          navigate(`/article/${data.id}`);
+        }, 2000);
       } else {
         setError(data.error || '上传失败');
       }
@@ -337,8 +340,8 @@ const FileUpload = () => {
           <div className="flex items-start gap-3 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
             <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-green-400 font-medium mb-2">上传成功</p>
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              <p className="text-green-400 font-medium mb-2">上传成功！正在跳转到文章页面...</p>
+              <div className="grid grid-cols-2 gap-2 text-sm mb-4">
                 <p className="text-white/70">
                   <span className="text-white/40">文件名：</span>
                   {result.filename}
@@ -366,6 +369,13 @@ const FileUpload = () => {
                   </p>
                 )}
               </div>
+              <button
+                onClick={() => navigate(`/article/${result.id}`)}
+                className="w-full px-4 py-2 bg-green-500 hover:bg-green-400 text-black font-medium rounded-lg transition-all flex items-center justify-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                立即查看文章
+              </button>
             </div>
           </div>
         )}

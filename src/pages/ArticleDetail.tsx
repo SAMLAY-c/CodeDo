@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { 
-  ChevronLeft, 
+import {
+  ChevronLeft,
   ChevronRight,
-  Clock, 
+  Clock,
   Calendar,
   User,
   Copy,
@@ -15,10 +15,11 @@ import {
   Circle,
   PlayCircle
 } from 'lucide-react';
-// Button component imported for future use
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
+import { getArticleById } from '../utils/storage';
+import type { Article } from '../types/article';
 
 // 文章数据（实际项目中应从API获取）
 const articleData = {
@@ -166,10 +167,48 @@ function ArticleDetail() {
   const [readingProgress, setReadingProgress] = useState(0);
   const [activeSection, setActiveSection] = useState('intro');
   const contentRef = useRef<HTMLDivElement>(null);
-  
-  // Use id for logging (will be used for API calls in production)
-  console.log('Article ID:', id);
 
+  // 尝试从本地存储获取文章，或使用默认示例数据
+  const [articleData, setArticleData] = useState<Article>(() => {
+    if (id) {
+      const uploadedArticle = getArticleById(id);
+      if (uploadedArticle) {
+        return uploadedArticle;
+      }
+    }
+    // 默认示例数据
+    return {
+      id: '1',
+      title: 'Vibe Coding 入门：用自然语言编程的新时代',
+      excerpt: '探索AI辅助编程的核心理念',
+      content: '',
+      author: 'AI编程导师',
+      date: '2025-03-01',
+      readTime: '15 分钟',
+      category: 'basic',
+      difficulty: '入门',
+      image: '/article-1.jpg',
+      keyPoints: [
+        'Vibe Coding 是一种与AI协作的编程新范式',
+        '通过自然语言描述需求，AI生成对应代码',
+        '适合快速原型开发和概念验证',
+        '需要人工审核和优化生成的代码',
+        '掌握Prompt工程是Vibe Coding的关键',
+      ],
+      toc: [
+        { id: 'intro', label: '什么是 Vibe Coding', level: 1 },
+        { id: 'vs-traditional', label: 'Vibe Coding vs 传统开发', level: 1 },
+        { id: 'workflow', label: 'Vibe Coding 工作流程', level: 1 },
+        { id: 'best-practices', label: '最佳实践', level: 1 },
+        { id: 'tips', label: '实用技巧', level: 2 },
+        { id: 'warnings', label: '注意事项', level: 2 },
+        { id: 'conclusion', label: '总结', level: 1 },
+      ],
+      createdAt: new Date().toISOString(),
+    };
+  });
+
+  // 更新页面标题
   useEffect(() => {
     document.title = `${articleData.title} - Coding入门`;
     window.scrollTo(0, 0);
@@ -183,7 +222,7 @@ function ArticleDetail() {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [articleData.title]);
 
   // 示例代码
   const exampleCode = `// 用自然语言描述需求，AI生成代码
@@ -244,7 +283,9 @@ console.log(sortUsersByAge(users));
             {/* 文章头部 */}
             <div className="mb-8">
               <Badge className="mb-4 bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-                {articleData.category}
+                {articleData.category === 'basic' ? '基础入门' :
+                 articleData.category === 'tools' ? '工具使用' :
+                 articleData.category === 'project' ? '实战项目' : '文章博客'}
               </Badge>
               <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight">
                 {articleData.title}
@@ -260,34 +301,44 @@ console.log(sortUsersByAge(users));
             </div>
 
             {/* 封面图 */}
-            <div className="rounded-xl overflow-hidden mb-8">
-              <img 
-                src={articleData.image} 
-                alt={articleData.title}
-                className="w-full h-64 md:h-80 object-cover"
-              />
-            </div>
+            {articleData.image && (
+              <div className="rounded-xl overflow-hidden mb-8">
+                <img
+                  src={articleData.image}
+                  alt={articleData.title}
+                  className="w-full h-64 md:h-80 object-cover"
+                />
+              </div>
+            )}
 
             {/* 核心要点卡片 */}
-            <div className="bg-gradient-to-br from-cyan-500/10 to-purple-500/10 rounded-xl border border-cyan-500/20 p-6 mb-8">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Lightbulb className="w-5 h-5 text-cyan-400" />
-                本文要点
-              </h3>
-              <ul className="space-y-2">
-                {keyPoints.map((point, index) => (
-                  <li key={index} className="flex items-start gap-3 text-white/70">
-                    <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
-                      {index + 1}
-                    </span>
-                    {point}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {articleData.keyPoints && articleData.keyPoints.length > 0 && (
+              <div className="bg-gradient-to-br from-cyan-500/10 to-purple-500/10 rounded-xl border border-cyan-500/20 p-6 mb-8">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <Lightbulb className="w-5 h-5 text-cyan-400" />
+                  本文要点
+                </h3>
+                <ul className="space-y-2">
+                  {articleData.keyPoints.map((point, index) => (
+                    <li key={index} className="flex items-start gap-3 text-white/70">
+                      <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                        {index + 1}
+                      </span>
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-            {/* 正文内容 */}
-            <div className="prose prose-invert max-w-none">
+            {/* 正文内容 - 渲染HTML或使用默认内容 */}
+            {articleData.content ? (
+              <div
+                className="prose prose-invert max-w-none"
+                dangerouslySetInnerHTML={{ __html: articleData.content }}
+              />
+            ) : (
+              <div className="prose prose-invert max-w-none">
               {/* 章节1 */}
               <section id="intro" className="mb-12">
                 <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-3">
@@ -391,6 +442,8 @@ console.log(sortUsersByAge(users));
                 </p>
               </section>
             </div>
+            )}
+            <Separator className="my-8 bg-white/10" />
 
             <Separator className="my-8 bg-white/10" />
 
@@ -425,67 +478,71 @@ console.log(sortUsersByAge(users));
 
           {/* 右侧边栏 */}
           <div className="lg:w-72 space-y-6">
-            {/* TOC 目录 */}
-            <div className="sticky top-24 bg-white/5 rounded-xl border border-white/10 p-5">
-              <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-cyan-400" />
-                目录
-              </h3>
-              <nav className="space-y-1">
-                {tocItems.map(item => (
-                  <a
-                    key={item.id}
-                    href={`#${item.id}`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });
-                      setActiveSection(item.id);
-                    }}
-                    className={`block py-2 px-3 rounded text-sm transition-all ${
-                      activeSection === item.id
-                        ? 'bg-cyan-500/20 text-cyan-400'
-                        : 'text-white/60 hover:text-white hover:bg-white/5'
-                    } ${item.level === 2 ? 'pl-6' : ''}`}
-                  >
-                    {item.label}
-                  </a>
-                ))}
-              </nav>
-            </div>
-
-            {/* 系列进度树 */}
-            <div className="bg-white/5 rounded-xl border border-white/10 p-5">
-              <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                <PlayCircle className="w-5 h-5 text-cyan-400" />
-                系列进度
-              </h3>
-              <div className="space-y-2">
-                {seriesProgress.map((item, index) => (
-                  <div key={item.id} className="flex items-center gap-3">
-                    <div className="flex flex-col items-center">
-                      {item.status === 'completed' ? (
-                        <CheckCircle2 className="w-5 h-5 text-cyan-400" />
-                      ) : item.status === 'current' ? (
-                        <div className="w-5 h-5 rounded-full border-2 border-cyan-400 bg-cyan-400/20" />
-                      ) : (
-                        <Circle className="w-5 h-5 text-white/20" />
-                      )}
-                      {index < seriesProgress.length - 1 && (
-                        <div className={`w-0.5 h-6 ${
-                          item.status === 'completed' ? 'bg-cyan-400/50' : 'bg-white/10'
-                        }`} />
-                      )}
-                    </div>
-                    <span className={`text-sm ${
-                      item.status === 'current' ? 'text-cyan-400 font-medium' : 
-                      item.status === 'completed' ? 'text-white/70' : 'text-white/40'
-                    }`}>
-                      {item.title}
-                    </span>
-                  </div>
-                ))}
+            {/* TOC 目录 - 只在有内容时显示 */}
+            {articleData.toc && articleData.toc.length > 0 && (
+              <div className="sticky top-24 bg-white/5 rounded-xl border border-white/10 p-5">
+                <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-cyan-400" />
+                  目录
+                </h3>
+                <nav className="space-y-1">
+                  {articleData.toc.map((item, index) => (
+                    <a
+                      key={index}
+                      href={`#${item.id}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });
+                        setActiveSection(item.id);
+                      }}
+                      className={`block py-2 px-3 rounded text-sm transition-all ${
+                        activeSection === item.id
+                          ? 'bg-cyan-500/20 text-cyan-400'
+                          : 'text-white/60 hover:text-white hover:bg-white/5'
+                      } ${item.level === 2 ? 'pl-6' : ''}`}
+                    >
+                      {item.label}
+                    </a>
+                  ))}
+                </nav>
               </div>
-            </div>
+            )}
+
+            {/* 系列进度树 - 只在默认数据时显示 */}
+            {!id && (
+              <div className="bg-white/5 rounded-xl border border-white/10 p-5">
+                <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+                  <PlayCircle className="w-5 h-5 text-cyan-400" />
+                  系列进度
+                </h3>
+                <div className="space-y-2">
+                  {seriesProgress.map((item, index) => (
+                    <div key={item.id} className="flex items-center gap-3">
+                      <div className="flex flex-col items-center">
+                        {item.status === 'completed' ? (
+                          <CheckCircle2 className="w-5 h-5 text-cyan-400" />
+                        ) : item.status === 'current' ? (
+                          <div className="w-5 h-5 rounded-full border-2 border-cyan-400 bg-cyan-400/20" />
+                        ) : (
+                          <Circle className="w-5 h-5 text-white/20" />
+                        )}
+                        {index < seriesProgress.length - 1 && (
+                          <div className={`w-0.5 h-6 ${
+                            item.status === 'completed' ? 'bg-cyan-400/50' : 'bg-white/10'
+                          }`} />
+                        )}
+                      </div>
+                      <span className={`text-sm ${
+                        item.status === 'current' ? 'text-cyan-400 font-medium' :
+                        item.status === 'completed' ? 'text-white/70' : 'text-white/40'
+                      }`}>
+                        {item.title}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* 相关推荐 */}
             <div className="bg-white/5 rounded-xl border border-white/10 p-5">
