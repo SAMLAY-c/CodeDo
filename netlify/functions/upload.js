@@ -250,7 +250,7 @@ exports.handler = async (event, context) => {
 };
 
 // 估算阅读时间（分钟）
-function estimateReadTime(content: string): string {
+function estimateReadTime(content) {
   const wordsPerMinute = 200; // 中文阅读速度
   const textLength = content.replace(/<[^>]*>/g, '').length;
   const minutes = Math.ceil(textLength / wordsPerMinute / 3); // 中文约3个字符=1词
