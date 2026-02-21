@@ -34,10 +34,24 @@ const seriesList = [
   { id: 'pm-tools', name: 'PM AI工具箱', count: 10, active: false },
 ];
 
-// 文章数据
-const articles = [
+interface TutorialItem {
+  id: string;
+  title: string;
+  excerpt: string;
+  image?: string;
+  category: string;
+  episodes?: number;
+  status?: string;
+  statusLabel?: string;
+  duration?: string;
+  difficulty: string;
+  featured?: boolean;
+}
+
+// 回退文章数据（API 不可用时使用）
+const fallbackArticles: TutorialItem[] = [
   {
-    id: 1,
+    id: '1',
     title: 'Vibe Coding 入门：用自然语言编程的新时代',
     excerpt: '探索AI辅助编程的核心理念，学习如何与AI协作高效完成代码编写。从基础概念到实战技巧，带你全面掌握Vibe Coding的精髓。',
     image: '/article-1.jpg',
@@ -50,7 +64,7 @@ const articles = [
     featured: true,
   },
   {
-    id: 2,
+    id: '2',
     title: 'Claude Prompt 工程最佳实践',
     excerpt: '学习如何编写高效的Claude提示词，提升AI代码生成的质量和准确性。',
     image: '/article-2.jpg',
@@ -63,7 +77,7 @@ const articles = [
     featured: false,
   },
   {
-    id: 3,
+    id: '3',
     title: '实战：用AI构建一个完整的Web应用',
     excerpt: '从零开始，使用Vibe Coding方法在2小时内完成一个全栈项目。',
     image: '/article-3.jpg',
@@ -76,7 +90,7 @@ const articles = [
     featured: false,
   },
   {
-    id: 4,
+    id: '4',
     title: 'OpenClaw 自动化工作流配置指南',
     excerpt: '掌握OpenClaw工具链的配置方法，建立高效的开发自动化流程。',
     image: '/article-4.jpg',
@@ -89,7 +103,7 @@ const articles = [
     featured: false,
   },
   {
-    id: 5,
+    id: '5',
     title: 'AI辅助调试：快速定位代码问题',
     excerpt: '利用AI工具快速分析和解决代码中的bug，提升调试效率。',
     image: '/article-5.jpg',
@@ -102,7 +116,7 @@ const articles = [
     featured: false,
   },
   {
-    id: 6,
+    id: '6',
     title: '代码重构的AI助手：从混乱到优雅',
     excerpt: '学习如何使用AI辅助进行代码重构，改善代码质量和可维护性。',
     image: '/parallax-1.jpg',
@@ -117,7 +131,7 @@ const articles = [
 ];
 
 // 状态徽章组件
-const StatusBadge = ({ status, label }: { status: string; label: string }) => {
+const StatusBadge = ({ status, label }: { status?: string; label?: string }) => {
   const styles: Record<string, string> = {
     new: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
     hot: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
@@ -138,7 +152,7 @@ const StatusBadge = ({ status, label }: { status: string; label: string }) => {
       className={`${styles[status]} text-xs font-medium flex items-center gap-1`}
     >
       {icons[status]}
-      {label}
+      {label || ''}
     </Badge>
   );
 };
@@ -147,10 +161,38 @@ function TopicCollection() {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState('all');
   const [progress] = useState(35);
+  const [articles, setArticles] = useState<TutorialItem[]>(fallbackArticles);
 
   useEffect(() => {
     document.title = 'Vibe Coding 主题合集 - Coding入门';
     window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadArticles = async () => {
+      try {
+        const response = await fetch('/api/get-articles?limit=100');
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (!payload || !Array.isArray(payload.items)) return;
+        if (!cancelled && payload.items.length > 0) {
+          const normalized = payload.items.map((item: TutorialItem) => ({
+            ...item,
+            id: String(item.id),
+          }));
+          setArticles(normalized);
+        }
+      } catch {
+        // keep fallback data
+      }
+    };
+
+    loadArticles();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // 筛选文章
@@ -250,7 +292,7 @@ function TopicCollection() {
                       <StatusBadge status={featuredArticle.status} label={featuredArticle.statusLabel} />
                       <span className="text-white/40 text-sm flex items-center gap-1">
                         <Play className="w-4 h-4" />
-                        {featuredArticle.episodes} 集
+                        {featuredArticle.episodes ?? 1} 集
                       </span>
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-3 group-hover:text-cyan-400 transition-colors">
@@ -262,10 +304,10 @@ function TopicCollection() {
                     <div className="flex items-center gap-4 text-sm text-white/40">
                       <span className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
-                        {featuredArticle.duration}
+                        {featuredArticle.duration || '15分钟'}
                       </span>
                       <span className="px-2 py-1 bg-white/10 rounded text-white/60">
-                        {featuredArticle.difficulty}
+                        {featuredArticle.difficulty || '入门'}
                       </span>
                     </div>
                   </div>
@@ -291,10 +333,10 @@ function TopicCollection() {
                     <div className="absolute top-3 left-3">
                       <StatusBadge status={article.status} label={article.statusLabel} />
                     </div>
-                    <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-xs text-white/80 flex items-center gap-1">
-                      <Play className="w-3 h-3" />
-                      {article.episodes} 集
-                    </div>
+                      <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-xs text-white/80 flex items-center gap-1">
+                        <Play className="w-3 h-3" />
+                        {article.episodes ?? 1} 集
+                      </div>
                   </div>
 
                   {/* 内容 */}
@@ -308,7 +350,7 @@ function TopicCollection() {
                     <div className="flex items-center justify-between text-xs text-white/40">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {article.duration}
+                        {article.duration || '15分钟'}
                       </span>
                       <span className="px-2 py-0.5 bg-white/10 rounded">
                         {article.difficulty}

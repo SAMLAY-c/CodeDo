@@ -51,6 +51,7 @@ async function getArticleById(id) {
 module.exports = {
   saveArticle,
   getArticleById,
+  getArticles,
 };
 
 async function saveArticleToSupabase(article) {
@@ -102,6 +103,58 @@ async function getArticleByIdFromSupabase(id) {
   }
 
   return rows[0].article || null;
+}
+
+async function getArticles(options = {}) {
+  const category = options.category || 'all';
+  const limit = Number(options.limit || 50);
+  const offset = Number(options.offset || 0);
+
+  if (HAS_SUPABASE) {
+    const rows = await getArticlesFromSupabase();
+    const filtered =
+      category === 'all'
+        ? rows
+        : rows.filter((article) => article.category === category);
+    const paged = filtered.slice(offset, offset + limit);
+    return { items: paged, total: filtered.length };
+  }
+
+  const local = await readStore();
+  const items = Object.values(local).sort((a, b) => {
+    const bTime = new Date(b.createdAt || b.date || 0).getTime();
+    const aTime = new Date(a.createdAt || a.date || 0).getTime();
+    return bTime - aTime;
+  });
+  const filtered =
+    category === 'all' ? items : items.filter((item) => item.category === category);
+  return {
+    items: filtered.slice(offset, offset + limit),
+    total: filtered.length,
+  };
+}
+
+async function getArticlesFromSupabase() {
+  const query = new URLSearchParams({
+    select: 'article,created_at',
+    order: 'created_at.desc',
+    limit: '500',
+  });
+  const endpoint = `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?${query.toString()}`;
+
+  const response = await fetch(endpoint, {
+    method: 'GET',
+    headers: buildSupabaseHeaders(),
+  });
+
+  if (!response.ok) {
+    const detail = await safeReadText(response);
+    throw new Error(`Supabase list failed: ${response.status} ${detail}`);
+  }
+
+  const rows = await response.json();
+  if (!Array.isArray(rows)) return [];
+  return rows.map((row) => row.article).filter(Boolean);
 }
 
 function buildSupabaseHeaders(extra = {}) {

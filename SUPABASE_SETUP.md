@@ -24,6 +24,7 @@ create index if not exists idx_articles_created_at on public.articles (created_a
 
 - `SUPABASE_ANON_KEY=你的publishable/anon密钥`（仅当你不使用 service_role 时兜底）
 - `SUPABASE_ARTICLES_TABLE=articles`
+- `SEED_TOKEN=自定义导入令牌`（保护 `POST /api/seed-tutorials`）
 
 ## 3) 注意事项
 
