@@ -1,0 +1,12 @@
+﻿{
+  "rewrites": [
+    { "source": "/api/themes", "destination": "/api/themes" },
+    { "source": "/api/theme/:id", "destination": "/api/theme?id=:id" },
+    { "source": "/api/article/:id", "destination": "/api/article?id=:id" },
+    { "source": "/api/get-article/:id", "destination": "/api/get-article?id=:id" },
+    { "source": "/api/media/upload", "destination": "/api/media-upload" },
+    { "source": "/api/upload", "destination": "/api/upload" },
+    { "source": "/api/seed-themes", "destination": "/api/seed-themes" },
+    { "source": "/api/seed-tutorials", "destination": "/api/seed-tutorials" }
+  ]
+}
