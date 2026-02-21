@@ -1,4 +1,26 @@
 const Buffer = require('buffer').Buffer;
+const crypto = require('crypto');
+
+// 文件类型枚举
+const FileType = {
+  HTML: 'html',
+  IMAGE: 'image',
+  VIDEO: 'video'
+};
+
+// 文件大小限制（字节）
+const MAX_FILE_SIZE = {
+  [FileType.HTML]: 10 * 1024 * 1024,    // 10MB
+  [FileType.IMAGE]: 20 * 1024 * 1024,   // 20MB
+  [FileType.VIDEO]: 100 * 1024 * 1024   // 100MB
+};
+
+// 允许的 MIME 类型
+const ALLOWED_MIME_TYPES = {
+  [FileType.HTML]: ['text/html', 'application/xhtml+xml'],
+  [FileType.IMAGE]: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+  [FileType.VIDEO]: ['video/mp4', 'video/webm', 'video/ogg']
+};
 
 exports.handler = async (event, context) => {
   // 设置 CORS
@@ -40,43 +62,107 @@ exports.handler = async (event, context) => {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: '没有收到文件', debug: formData })
+        body: JSON.stringify({ error: '没有收到文件' })
       };
     }
 
+    // 获取参数
     const file = formData.file;
-    const content = file.content;
+    const fileType = formData.fileType || FileType.HTML;
+    const title = formData.title?.trim() || file.filename;
+    const category = formData.category || 'article';
+    const tags = formData.tags ? JSON.parse(formData.tags) : [];
 
     // 验证文件类型
-    if (!content.toLowerCase().includes('<html') && !content.toLowerCase().includes('<!doctype')) {
+    if (!Object.values(FileType).includes(fileType)) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: '只允许上传 HTML 文件' })
+        body: JSON.stringify({ error: '无效的文件类型' })
       };
     }
 
-    // 提取 HTML 的标题
-    const titleMatch = content.match(/<title>(.*?)<\/title>/i);
-    const title = titleMatch ? titleMatch[1] : file.filename;
+    // 验证文件大小
+    const maxSize = MAX_FILE_SIZE[fileType];
+    if (file.content.length > maxSize) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: `文件过大，最大允许 ${Math.round(maxSize / 1024 / 1024)}MB`
+        })
+      };
+    }
+
+    // 对于 HTML 文件，验证内容
+    if (fileType === FileType.HTML) {
+      const contentLower = file.content.toLowerCase();
+      if (!contentLower.includes('<html') && !contentLower.includes('<!doctype')) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: '无效的 HTML 文件' })
+        };
+      }
+    }
+
+    // 生成唯一 ID
+    const id = crypto.randomUUID();
+    const timestamp = new Date().toISOString();
+
+    // 提取 HTML 标题（如果是 HTML 文件）
+    let extractedTitle = title;
+    if (fileType === FileType.HTML) {
+      const titleMatch = file.content.match(/<title>(.*?)<\/title>/i);
+      if (titleMatch && !formData.title) {
+        extractedTitle = titleMatch[1];
+      }
+    }
+
+    // 构建响应数据（模拟数据库记录）
+    const record = {
+      id,
+      filename: file.filename,
+      fileType,
+      title: extractedTitle,
+      category,
+      tags,
+      size: file.content.length,
+      createdAt: timestamp,
+      // TODO: 实际部署时应该存储文件到数据库和云存储
+      // content: file.content,  // HTML 文件可以存储内容
+      // url: `https://storage.example.com/${id}/${file.filename}`  // 图片/视频的 URL
+    };
+
+    // 根据文件类型返回不同的数据
+    if (fileType === FileType.HTML) {
+      record.content = file.content;
+    } else {
+      // 图片和视频应该上传到云存储，这里返回占位符 URL
+      record.url = `https://your-storage.com/${id}/${file.filename}`;
+    }
+
+    // TODO: 保存到数据库
+    // await db.collection('uploads').insertOne(record);
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        filename: file.filename,
-        size: file.content.length,
-        title: title,
-        content: content,
+        ...record
       })
     };
 
   } catch (error) {
+    console.error('Upload error:', error);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: '服务器错误', detail: error.message, stack: error.stack })
+      body: JSON.stringify({
+        error: '服务器错误',
+        detail: error.message
+      })
     };
   }
 };
@@ -84,18 +170,15 @@ exports.handler = async (event, context) => {
 // 解析 multipart/form-data 的辅助函数
 function parseMultipartData(body, contentType) {
   if (!contentType) {
-    console.log('No content-type');
     return null;
   }
 
   if (!contentType.includes('multipart/form-data')) {
-    console.log('Not multipart/form-data:', contentType);
     return null;
   }
 
   const boundaryMatch = contentType.match(/boundary=([^;]+)/i);
   if (!boundaryMatch) {
-    console.log('No boundary found');
     return null;
   }
 
