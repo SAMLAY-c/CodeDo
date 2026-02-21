@@ -4,12 +4,18 @@ export interface Article {
   title: string;
   excerpt: string;
   content: string; // HTML 内容
+  filename?: string;
+  fileType?: 'html' | 'image' | 'video';
+  size?: number;
+  articleUrl?: string;
+  url?: string;
   author: string;
   date: string;
   readTime: string;
   category: string;
   difficulty: '入门' | '中级' | '进阶';
   episodes?: number;
+  duration?: string;
   image?: string;
   status?: 'hot' | 'new' | 'coming';
   statusLabel?: string;
@@ -19,6 +25,7 @@ export interface Article {
   keyPoints?: string[]; // 核心要点
   toc?: TOCItem[]; // 目录
   metadata?: ArticleMetadata;
+  createdAt?: string;
 }
 
 export interface TOCItem {

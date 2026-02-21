@@ -1,5 +1,6 @@
 const Buffer = require('buffer').Buffer;
 const crypto = require('crypto');
+const { saveArticle } = require('./_lib/articleStore');
 
 // 文件类型枚举
 const FileType = {
@@ -57,7 +58,8 @@ exports.handler = async (event, context) => {
     }
 
     // 解析 multipart/form-data
-    const formData = parseMultipartData(body, event.headers['content-type']);
+    const contentType = event.headers['content-type'] || event.headers['Content-Type'];
+    const formData = parseMultipartData(body, contentType);
 
     if (!formData || !formData.file) {
       return {
@@ -224,15 +226,20 @@ exports.handler = async (event, context) => {
       })
     };
 
-    // TODO: 保存到数据库
-    // await db.collection('articles').insertOne(article);
+    const articleUrl = buildArticleUrl(event, id);
+    const articleWithUrl = {
+      ...article,
+      articleUrl,
+    };
+
+    await saveArticle(articleWithUrl);
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        ...article
+        ...articleWithUrl
       })
     };
 
@@ -299,4 +306,13 @@ function parseMultipartData(body, contentType) {
   }
 
   return result;
+}
+
+function buildArticleUrl(event, id) {
+  const host =
+    event.headers['x-forwarded-host'] ||
+    event.headers.host ||
+    'localhost:8888';
+  const protocol = event.headers['x-forwarded-proto'] || 'https';
+  return `${protocol}://${host}/article/${id}`;
 }

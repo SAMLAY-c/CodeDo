@@ -1,3 +1,5 @@
+const { getArticleById } = require('./_lib/articleStore');
+
 exports.handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -23,7 +25,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const id = event.path.split('/').pop();
+    const id = extractArticleId(event);
 
     if (!id) {
       return {
@@ -33,17 +35,20 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // TODO: 从数据库获取文章
-    // 这里应该从数据库查询，现在返回 null
-    // 实际上数据应该保存在客户端的 localStorage 或从后端数据库获取
+    const article = await getArticleById(id);
+
+    if (!article) {
+      return {
+        statusCode: 404,
+        headers,
+        body: JSON.stringify({ error: '文章不存在或已过期' })
+      };
+    }
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({
-        id,
-        // 实际应从数据库获取
-      })
+      body: JSON.stringify(article)
     };
 
   } catch (error) {
@@ -57,3 +62,19 @@ exports.handler = async (event, context) => {
     };
   }
 };
+
+function extractArticleId(event) {
+  if (event.queryStringParameters && event.queryStringParameters.id) {
+    return event.queryStringParameters.id;
+  }
+
+  const path = event.path || '';
+  const segments = path.split('/').filter(Boolean);
+  const last = segments[segments.length - 1];
+
+  if (!last || last === 'get-article') {
+    return '';
+  }
+
+  return decodeURIComponent(last);
+}

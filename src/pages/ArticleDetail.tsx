@@ -18,39 +18,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { getArticleById } from '../utils/storage';
+import { getArticleById, saveArticle } from '../utils/storage';
 import type { Article } from '../types/article';
-
-// 文章数据（实际项目中应从API获取）
-const articleData = {
-  id: 1,
-  title: 'Vibe Coding 入门：用自然语言编程的新时代',
-  author: 'AI编程导师',
-  date: '2025-03-01',
-  readTime: '15 分钟',
-  category: '基础入门',
-  image: '/article-1.jpg',
-};
-
-// 核心要点
-const keyPoints = [
-  'Vibe Coding 是一种与AI协作的编程新范式',
-  '通过自然语言描述需求，AI生成对应代码',
-  '适合快速原型开发和概念验证',
-  '需要人工审核和优化生成的代码',
-  '掌握Prompt工程是Vibe Coding的关键',
-];
-
-// 目录数据
-const tocItems = [
-  { id: 'intro', label: '什么是 Vibe Coding', level: 1 },
-  { id: 'vs-traditional', label: 'Vibe Coding vs 传统开发', level: 1 },
-  { id: 'workflow', label: 'Vibe Coding 工作流程', level: 1 },
-  { id: 'best-practices', label: '最佳实践', level: 1 },
-  { id: 'tips', label: '实用技巧', level: 2 },
-  { id: 'warnings', label: '注意事项', level: 2 },
-  { id: 'conclusion', label: '总结', level: 1 },
-];
 
 // 系列文章进度
 const seriesProgress = [
@@ -166,6 +135,7 @@ function ArticleDetail() {
   const navigate = useNavigate();
   const [readingProgress, setReadingProgress] = useState(0);
   const [activeSection, setActiveSection] = useState('intro');
+  const [isLoadingRemote, setIsLoadingRemote] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   // 尝试从本地存储获取文章，或使用默认示例数据
@@ -207,6 +177,49 @@ function ArticleDetail() {
       createdAt: new Date().toISOString(),
     };
   });
+
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    const localArticle = getArticleById(id);
+    if (localArticle) {
+      setArticleData(localArticle);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoadingRemote(true);
+
+    fetch(`/api/get-article/${id}`)
+      .then(async (res) => {
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          throw new Error(payload.error || '文章加载失败');
+        }
+        return res.json();
+      })
+      .then((remoteArticle: Article) => {
+        if (cancelled) return;
+        setArticleData(remoteArticle);
+        saveArticle(remoteArticle);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        const message = err instanceof Error ? err.message : '文章加载失败';
+        toast.error(message);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoadingRemote(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   // 更新页面标题
   useEffect(() => {
@@ -277,6 +290,9 @@ console.log(sortUsersByAge(users));
 
       {/* 主体内容 */}
       <div className="max-w-7xl mx-auto px-6 py-12">
+        {id && isLoadingRemote && (
+          <div className="mb-6 text-sm text-cyan-300/90">正在从服务器加载文章...</div>
+        )}
         <div className="flex flex-col lg:flex-row gap-12">
           {/* 左侧文章区 */}
           <div className="flex-1 max-w-3xl" ref={contentRef}>
@@ -443,8 +459,6 @@ console.log(sortUsersByAge(users));
               </section>
             </div>
             )}
-            <Separator className="my-8 bg-white/10" />
-
             <Separator className="my-8 bg-white/10" />
 
             {/* 上一篇/下一篇导航 */}

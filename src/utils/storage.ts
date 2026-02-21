@@ -42,7 +42,9 @@ export function deleteArticle(id: string): void {
  */
 export function getArticleList(): Article[] {
   const articles = getAllArticles();
-  return Object.values(articles).sort((a, b) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  return Object.values(articles).sort((a, b) => {
+    const bTime = new Date(b.createdAt || b.date || 0).getTime();
+    const aTime = new Date(a.createdAt || a.date || 0).getTime();
+    return bTime - aTime;
+  });
 }

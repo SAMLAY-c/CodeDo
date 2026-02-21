@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, FileText, Image, Video, CheckCircle, XCircle, Loader2, Tag, X, ExternalLink } from 'lucide-react';
 import { saveArticle } from '../utils/storage';
+import type { Article } from '../types/article';
 
 // 文件类型常量
 export const FileType = {
@@ -32,6 +33,7 @@ interface UploadResult {
   tags: string[];
   size: number;
   url?: string;
+  articleUrl?: string;
   content?: string;
 }
 
@@ -143,14 +145,19 @@ const FileUpload = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // 保存文章到本地存储
-        saveArticle(data);
+        const normalizedResult: UploadResult = {
+          ...data,
+          articleUrl: data.articleUrl || `${window.location.origin}/article/${data.id}`,
+        };
 
-        setResult(data);
+        // 保存文章到本地存储
+        saveArticle(normalizedResult as unknown as Article);
+
+        setResult(normalizedResult);
 
         // 3秒后自动跳转到文章页面
         setTimeout(() => {
-          navigate(`/article/${data.id}`);
+          navigate(`/article/${normalizedResult.id}`);
         }, 2000);
       } else {
         setError(data.error || '上传失败');
@@ -366,6 +373,19 @@ const FileUpload = () => {
                   <p className="text-white/70 col-span-2">
                     <span className="text-white/40">标签：</span>
                     {result.tags.join(', ')}
+                  </p>
+                )}
+                {result.articleUrl && (
+                  <p className="text-white/70 col-span-2 break-all">
+                    <span className="text-white/40">文章链接：</span>
+                    <a
+                      href={result.articleUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-cyan-400 hover:text-cyan-300 underline"
+                    >
+                      {result.articleUrl}
+                    </a>
                   </p>
                 )}
               </div>
